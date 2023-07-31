@@ -2,40 +2,48 @@ import smtplib
 import os
 import chardet
 import openpyxl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+host = "smtp.office365.com"
+port = "587"
+password = input("Enter your Outlook password: ")
 
 def send_email(email, password, subject, body, attachment):
-    # Create a SMTP object
-    smtp = smtplib.SMTP("smtp.live.com", 587)
-
-    # Start TLS for security
+    email_logged = "robson.flavio20@outlook.com"
+    smtp = smtplib.SMTP(host, port)
     smtp.starttls()
+    smtp.ehlo()
 
-    # Login to the SMTP server
-    smtp.login(email, password)
+    print('--------------------------------')
+    print(str(email_logged))
+    print(str(password))
+    smtp.login(email_logged, password)
+    msg = MIMEMultipart()
+    msg["From"] = email_logged
+    msg["To"] = email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    # Attach the PDF file
+    with open(attachment, "rb") as f:
+        part = MIMEText(f.read(), "application", "pdf")
+        part.add_header("Content-Disposition", f"attachment; filename={os.path.basename(attachment)}")
+        msg.attach(part)
 
     # Send the email
-    message = f"From: {email}\nTo: {email}\nSubject: {subject}\n\n{body}"
-    with open(attachment, "rb") as f:
-        smtp.sendmail(email, email, message, f.read())
+    smtp.sendmail(email_logged, email, msg.as_string())
 
     # Close the SMTP connection
     smtp.quit()
 
 def main():
-    # Get the email and password from the user
-    email = input("Enter your Outlook email: ")
-    password = input("Enter your Outlook password or app password: ")
 
-    # Get the path to the XLSX file
     xlsx_file_path = input("Enter the path to the XLSX file: ")
 
     # Get the path to the folder that contains the PDF files
     pdf_folder_path = input("Enter the path to the folder that contains the PDF files: ")
-
-    # Open the XLSX file using openpyxl
     workbook = openpyxl.load_workbook(xlsx_file_path)
-
-    # Select the first sheet in the workbook (you can adjust this if needed)
     sheet = workbook.active
 
     # Find the column index with the header "email"
